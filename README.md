@@ -3,7 +3,8 @@ Localization and Functional Analysis for a given list of proteins or genes
 
 FIRST: Get FASTA sequences for all protein
 1)Go to Uniprot							
-		 https://www.uniprot.org/id-mapping						
+		 https://www.uniprot.org/id-mapping	
+   
 2) Copy paste protein list into text box
   2a) For total proteins, simply copy paste the protein IDs from the initial excel file
   2b) For proteins only over a certain SpC and TIC, run most_changed_proteins.py and use the protein list in the resulting text file							
