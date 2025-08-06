@@ -41,5 +41,5 @@ COG FUNCTIONAL ANALYSIS
 4) When run finished, download Excel file of results; Column of interest is COG_category
 5) Run create-COG-lists.py per downloaded file to get a text file of proteins sorted by COG, including counts per category
    a) Can count in excel how often each COG Code appears using    =COUNTIF($[range], "*Letter*"). Made sure to include the wildcard * on either side of the         COG letter youre searching for to account for proteins with multiple letters. Without *, a protein with CO (meaning C and O) will not be counted for           either					
-6) Run compare-COGs.py to get a text file of proteins unique to a strain (can only compare 2 files)						
+6) Run compare-COGs.py to get a text file of proteins unique to a strain (can compare more than 2 files)						
 7) Make your Prisim pie chart	
