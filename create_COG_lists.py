@@ -5,6 +5,8 @@ import os
 
 # COG code to category name mapping
 COG_CATEGORIES = {
+    "A": "RNA processing and modification",
+    "B": "Chromatin structure and dynamics",
     "C": "Energy production and conversion",
     "D": "Cell cycle control, cell division, chromosome partitioning",
     "E": "Amino acid transport and metabolism",
@@ -26,6 +28,7 @@ COG_CATEGORIES = {
     "U": "Intracellular trafficking, secretion, and vesicular transport",
     "V": "Defense mechanisms",
     "W": "Extracellular structures",
+    "X": "Mobilome: prophages, transposons",
     "Y": "Nuclear structure",
     "Z": "Cytoskeleton",
     "-": "Not assigned / No COG code"
@@ -87,4 +90,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
