@@ -27,76 +27,114 @@ def parse_file(file_path):
 
     return cog_dict
 
-def compare_cogs(file1_data, file2_data, file1_title, file2_title):
+def compare_multiple_cogs(file_data_list, file_titles):
     results = []
-    all_codes = sorted(set(file1_data.keys()).union(file2_data.keys()))
+    all_codes = sorted(set().union(*(fd.keys() for fd in file_data_list)))
 
     for code in all_codes:
-        in_file1 = code in file1_data
-        in_file2 = code in file2_data
+        present_files = [i for i, fd in enumerate(file_data_list) if code in fd]
+        if not present_files:
+            continue
 
-        if in_file1 and in_file2:
-            title = file1_data[code]["title"] if file1_data[code]["title"] else file2_data[code]["title"]
-            proteins1 = set(file1_data[code]["proteins"])
-            proteins2 = set(file2_data[code]["proteins"])
+        title = None
+        all_protein_sets = []
+        for i in present_files:
+            cog_info = file_data_list[i].get(code, {})
+            title = cog_info.get("title", title)
+            proteins = set(cog_info.get("proteins", []))
+            all_protein_sets.append(proteins)
 
-            diff1 = proteins1 - proteins2
-            diff2 = proteins2 - proteins1
+        results.append(f"{code}: {title}")
 
-            if diff1 or diff2:
-                results.append(f"{code}: {title}")
-                results.append(f"Unique to {file1_title}:")
-                results.append(', '.join(sorted(diff1)) if diff1 else "(none)")
-                results.append(f"Unique to {file2_title}:")
-                results.append(', '.join(sorted(diff2)) if diff2 else "(none)")
-                results.append("")
+        for i, proteins in enumerate(all_protein_sets):
+            others = set().union(*(s for j, s in enumerate(all_protein_sets) if j != i))
+            unique = proteins - others
+            results.append(f"Unique to {file_titles[present_files[i]]}:")
+            results.append(', '.join(sorted(unique)) if unique else "(none)")
 
-        elif in_file1:
-            title = file1_data[code]["title"]
-            results.append(f"{code}: {title}")
-            results.append(f"Unique to {file1_title}:")
-            results.append(', '.join(sorted(file1_data[code]["proteins"])))
-            results.append(f"Unique to {file2_title}:")
-            results.append("(none)")
-            results.append("")
-
-        elif in_file2:
-            title = file2_data[code]["title"]
-            results.append(f"{code}: {title}")
-            results.append(f"Unique to {file1_title}:")
-            results.append("(none)")
-            results.append(f"Unique to {file2_title}:")
-            results.append(', '.join(sorted(file2_data[code]["proteins"])))
-            results.append("")
-
+        results.append("")
+        
     return results
 
-def select_files():
+def process_files(file_paths, output_path):
+    file_data_list = [parse_file(p) for p in file_paths]
+    file_titles = [os.path.basename(p) for p in file_paths]
+    results = compare_multiple_cogs(file_data_list, file_titles)
+    with open(output_path, "w") as f:
+        f.write("\n".join(results))
+
+def launch_gui():
     root = tk.Tk()
-    root.withdraw()
-    file1_path = filedialog.askopenfilename(title="Select File 1")
-    file2_path = filedialog.askopenfilename(title="Select File 2")
-    return file1_path, file2_path
+    root.title("Multi-File COG Comparator")
+    root.geometry("600x650")
 
-def main():
-    file1_path, file2_path = select_files()
-    if not file1_path or not file2_path:
-        print("File selection cancelled.")
-        return
+    file_labels = []
 
-    file1_title = os.path.basename(file1_path)
-    file2_title = os.path.basename(file2_path)
+    # Center frame to hold everything
+    container = tk.Frame(root)
+    container.pack(expand=True)
 
-    file1_data = parse_file(file1_path)
-    file2_data = parse_file(file2_path)
+    def get_file_count():
+        try:
+            count = int(file_count_entry.get())
+            if count < 2:
+                raise ValueError
+            load_file_inputs(count)
+        except ValueError:
+            messagebox.showerror("Invalid input", "Please enter an integer ≥ 2.")
 
-    results = compare_cogs(file1_data, file2_data, file1_title, file2_title)
+    def load_file_inputs(count):
+        for widget in file_input_frame.winfo_children():
+            widget.destroy()
+        file_labels.clear()
 
-    output_filename = "COG_comparison_results.txt"
-    with open(output_filename, "w") as out_file:
-        out_file.write("\n".join(results))
+        for i in range(count):
+            frame = tk.Frame(file_input_frame)
+            frame.pack(pady=8)
 
-    print(f"Comparison complete. Output saved to {output_filename}")
+            tk.Label(frame, text=f"Select file {i + 1}", anchor='center', justify='center').pack()
+            label = tk.Label(frame, text="", wraplength=500, justify='center')
+            label.pack()
+            tk.Button(frame, text="Browse", command=lambda lbl=label: browse_file(lbl)).pack(pady=2)
 
+            file_labels.append(label)
+
+    def browse_file(label):
+        path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+        if path:
+            label.config(text=path)
+
+    def process():
+        file_paths = [lbl.cget("text") for lbl in file_labels]
+        if not all(file_paths):
+            messagebox.showerror("Error", "Please select all files.")
+            return
+
+        output_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+        if not output_path:
+            return
+
+        try:
+            process_files(file_paths, output_path)
+            messagebox.showinfo("Done", f"File saved to: {output_path}")
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred:\n{e}")
+
+    # Entry for number of files
+    tk.Label(container, text="How many files do you want to compare? (≥ 2)", justify="center").pack(pady=10)
+    file_count_entry = tk.Entry(container, justify='center')
+    file_count_entry.pack()
+    tk.Button(container, text="Confirm", command=get_file_count).pack(pady=5)
+
+    # Frame to hold file selection inputs
+    file_input_frame = tk.Frame(container)
+    file_input_frame.pack(pady=10)
+
+    # Compare button
+    tk.Button(container, text="Compare Files", command=process, bg='green', fg='white').pack(pady=20)
+
+    root.mainloop()
+
+# Run GUI
 if __name__ == "__main__":
-    main()
+    launch_gui()
